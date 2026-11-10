@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Slush Design Tokens -->
+    <color name="slush_carbon">#000000</color>
+    <color name="slush_paper_white">#FFFFFF</color>
+    <color name="slush_sky_wash">#DCEEFF</color>
+    <color name="slush_concrete_gray">#CCCCCC</color>
+    <color name="slush_soft_mist">#E9E9E9</color>
+    <color name="slush_electric_blue">#4DA2FF</color>
+    <color name="slush_mint_pop">#55DB9C</color>
+    <color name="slush_lavender">#E9CCFF</color>
+    <color name="slush_ember">#FB4903</color>
+    <color name="slush_sunburst">#FFD731</color>
+    <color name="slush_voltage_violet">#5C4ADE</color>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

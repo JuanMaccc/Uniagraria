@@ -12,9 +12,9 @@ public class Config {
             "t_min", "t_max", "ph_min", "ph_max", "o2_min",
             "temp_offset", "ph_v_neutro", "ph_v_acido"};
 
-    // Últimos valores "crudos" de los sensores (simulados por ahora)
-    public static volatile float ultimoTempRaw = Float.NaN;
-    public static volatile float ultimoPhV = Float.NaN;
+    // Últimos valores "crudos" de los sensores con valores base realistas
+    public static volatile float ultimoTempRaw = 28.0f;
+    public static volatile float ultimoPhV = 1.278f;
 
     private final SharedPreferences sp;
 
@@ -26,7 +26,7 @@ public class Config {
         return sp.getFloat(clave, defecto(clave));
     }
 
-    private static float defecto(String clave) {
+    public static float defecto(String clave) {
         switch (clave) {
             case "t_min": return 25f;
             case "t_max": return 31f;
@@ -64,6 +64,15 @@ public class Config {
         }
     }
 
+    /** Restablece todos los valores a los valores de fábrica. */
+    public void restablecerPorDefecto() {
+        SharedPreferences.Editor ed = sp.edit();
+        for (String k : CLAVES) {
+            ed.putFloat(k, defecto(k));
+        }
+        ed.apply();
+    }
+
     /** Valida y guarda. Devuelve null si todo salió bien, o el mensaje de error. */
     public String guardar(Map<String, Float> cambios) {
         Map<String, Float> nueva = new HashMap<>();
@@ -82,18 +91,34 @@ public class Config {
             nueva.put(k, v);
         }
 
-        if (nueva.get("t_min") >= nueva.get("t_max")) {
+        // Validar coherencia solo sobre lo que se está modificando
+        boolean cambioTempUmbrales = cambios.containsKey("t_min") || cambios.containsKey("t_max");
+        Float tMin = nueva.get("t_min");
+        Float tMax = nueva.get("t_max");
+        if (cambioTempUmbrales && tMin != null && tMax != null && tMin >= tMax) {
             return "La temperatura mínima debe ser menor que la máxima";
         }
-        if (nueva.get("ph_min") >= nueva.get("ph_max")) {
+
+        boolean cambioPhUmbrales = cambios.containsKey("ph_min") || cambios.containsKey("ph_max");
+        Float phMin = nueva.get("ph_min");
+        Float phMax = nueva.get("ph_max");
+        if (cambioPhUmbrales && phMin != null && phMax != null && phMin >= phMax) {
             return "El pH mínimo debe ser menor que el máximo";
         }
-        if (Math.abs(nueva.get("ph_v_neutro") - nueva.get("ph_v_acido")) < 0.05f) {
-            return "Los voltajes de calibración de pH son casi iguales";
+
+        boolean cambioPhCalibracion = cambios.containsKey("ph_v_neutro") || cambios.containsKey("ph_v_acido");
+        if (cambioPhCalibracion) {
+            Float vNeutro = nueva.get("ph_v_neutro");
+            Float vAcido = nueva.get("ph_v_acido");
+            if (vNeutro != null && vAcido != null && Math.abs(vNeutro - vAcido) < 0.05f) {
+                return "Los voltajes de pH 7 y pH 4 son casi iguales (deben variar al menos 0.05 V)";
+            }
         }
 
         SharedPreferences.Editor ed = sp.edit();
-        for (String k : CLAVES) ed.putFloat(k, nueva.get(k));
+        for (Map.Entry<String, Float> e : cambios.entrySet()) {
+            ed.putFloat(e.getKey(), e.getValue());
+        }
         ed.apply();
         return null;
     }

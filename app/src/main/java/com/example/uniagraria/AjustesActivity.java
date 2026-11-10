@@ -22,15 +22,19 @@ public class AjustesActivity extends AppCompatActivity {
 
     private Config config;
     private EditText etTMin, etTMax, etPhMin, etPhMax, etO2Min, etTref;
-    private TextView tvMsg, tvMsgCal, tvPhV, tvCalInfo;
+    private TextView tvMsg, tvMsgCal, tvPhV, tvTempRaw, tvCalInfo;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    // Muestra el voltaje de pH en vivo, para poder calibrar
+    // Muestra lecturas crudas en vivo para calibrar
     private final Runnable refrescar = new Runnable() {
         @Override
         public void run() {
             float v = Config.ultimoPhV;
             tvPhV.setText(Float.isNaN(v) ? "-- V" : String.format(Locale.US, "%.3f V", v));
+
+            float raw = Config.ultimoTempRaw;
+            tvTempRaw.setText(Float.isNaN(raw) ? "-- °C" : String.format(Locale.US, "%.1f °C", raw));
+
             handler.postDelayed(this, 1000);
         }
     };
@@ -39,6 +43,8 @@ public class AjustesActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         WindowCompat.enableEdgeToEdge(getWindow());
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(true);
         setContentView(R.layout.activity_ajustes);
 
         View root = findViewById(R.id.rootAjustes);
@@ -64,6 +70,7 @@ public class AjustesActivity extends AppCompatActivity {
         tvMsg = findViewById(R.id.tvMsg);
         tvMsgCal = findViewById(R.id.tvMsgCal);
         tvPhV = findViewById(R.id.tvPhV);
+        tvTempRaw = findViewById(R.id.tvTempRaw);
         tvCalInfo = findViewById(R.id.tvCalInfo);
 
         findViewById(R.id.btnVolver).setOnClickListener(x -> finish());
@@ -71,6 +78,7 @@ public class AjustesActivity extends AppCompatActivity {
         findViewById(R.id.btnPh7).setOnClickListener(x -> calibrarPh("ph_v_neutro"));
         findViewById(R.id.btnPh4).setOnClickListener(x -> calibrarPh("ph_v_acido"));
         findViewById(R.id.btnTemp).setOnClickListener(x -> calibrarTemperatura());
+        findViewById(R.id.btnReset).setOnClickListener(x -> restablecerValores());
 
         llenarUmbrales();
         actualizarInfo();
@@ -88,21 +96,17 @@ public class AjustesActivity extends AppCompatActivity {
         handler.removeCallbacks(refrescar);
     }
 
-    private String fmt(float v) {
-        return String.format(Locale.US, "%.1f", v);
-    }
-
     private void llenarUmbrales() {
-        etTMin.setText(fmt(config.get("t_min")));
-        etTMax.setText(fmt(config.get("t_max")));
-        etPhMin.setText(fmt(config.get("ph_min")));
-        etPhMax.setText(fmt(config.get("ph_max")));
-        etO2Min.setText(fmt(config.get("o2_min")));
+        etTMin.setText(String.format(Locale.US, "%.1f", config.get("t_min")));
+        etTMax.setText(String.format(Locale.US, "%.1f", config.get("t_max")));
+        etPhMin.setText(String.format(Locale.US, "%.2f", config.get("ph_min")));
+        etPhMax.setText(String.format(Locale.US, "%.2f", config.get("ph_max")));
+        etO2Min.setText(String.format(Locale.US, "%.1f", config.get("o2_min")));
     }
 
     private void actualizarInfo() {
         tvCalInfo.setText(String.format(Locale.US,
-                "Corrección de temperatura: %.2f °C · V pH 7: %.3f · V pH 4: %.3f",
+                "Corrección de temperatura: %+.2f °C · V pH 7: %.3f · V pH 4: %.3f",
                 config.get("temp_offset"), config.get("ph_v_neutro"), config.get("ph_v_acido")));
     }
 
@@ -116,7 +120,7 @@ public class AjustesActivity extends AppCompatActivity {
 
     private void aviso(TextView tv, String texto, boolean ok) {
         tv.setText(texto);
-        tv.setTextColor(Color.parseColor(ok ? "#4CC07F" : "#EF6B6B"));
+        tv.setTextColor(Color.parseColor(ok ? "#2E8B57" : "#FB4903"));
     }
 
     private void guardarUmbrales() {
@@ -129,7 +133,7 @@ public class AjustesActivity extends AppCompatActivity {
 
         for (float v : cambios.values()) {
             if (Float.isNaN(v)) {
-                aviso(tvMsg, "Revisa que todos los campos tengan un número", false);
+                aviso(tvMsg, "Revisa que todos los campos tengan un número válido", false);
                 return;
             }
         }
@@ -149,6 +153,17 @@ public class AjustesActivity extends AppCompatActivity {
             aviso(tvMsgCal, "El sensor de pH no entrega lectura", false);
             return;
         }
+
+        // Advertencia si intenta fijar pH 4 y el sensor marca exactamente lo mismo que pH 7
+        if ("ph_v_acido".equals(clave) && Math.abs(v - config.get("ph_v_neutro")) < 0.05f) {
+            aviso(tvMsgCal, "Sumerge la sonda en la solución pH 4 (voltaje casi igual a pH 7)", false);
+            return;
+        }
+        if ("ph_v_neutro".equals(clave) && Math.abs(v - config.get("ph_v_acido")) < 0.05f) {
+            aviso(tvMsgCal, "Sumerge la sonda en la solución pH 7 (voltaje casi igual a pH 4)", false);
+            return;
+        }
+
         Map<String, Float> cambios = new HashMap<>();
         cambios.put(clave, v);
         String error = config.guardar(cambios);
@@ -156,7 +171,7 @@ public class AjustesActivity extends AppCompatActivity {
             aviso(tvMsgCal, error, false);
         } else {
             actualizarInfo();
-            aviso(tvMsgCal, "Calibración guardada ✔", true);
+            aviso(tvMsgCal, "Calibración de pH guardada ✔", true);
         }
     }
 
@@ -178,7 +193,16 @@ public class AjustesActivity extends AppCompatActivity {
             aviso(tvMsgCal, error, false);
         } else {
             actualizarInfo();
-            aviso(tvMsgCal, "Calibración guardada ✔", true);
+            aviso(tvMsgCal, "Calibración de temperatura guardada ✔", true);
         }
+    }
+
+    private void restablecerValores() {
+        config.restablecerPorDefecto();
+        llenarUmbrales();
+        actualizarInfo();
+        etTref.setText("");
+        aviso(tvMsg, "Umbrales restablecidos de fábrica ✔", true);
+        aviso(tvMsgCal, "Calibración restablecida de fábrica ✔", true);
     }
 }

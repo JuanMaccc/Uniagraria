@@ -1,8 +1,11 @@
 package com.example.uniagraria;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -12,6 +15,8 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -53,9 +58,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState);
         WindowCompat.enableEdgeToEdge(getWindow());
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(true);
         setContentView(R.layout.activity_main);
 
         config = new Config(this);
@@ -83,8 +90,26 @@ public class MainActivity extends AppCompatActivity {
         anillo = findViewById(R.id.anillo);
         grafica = findViewById(R.id.grafica);
 
-        findViewById(R.id.btnAjustes).setOnClickListener(
-                x -> startActivity(new Intent(this, AjustesActivity.class)));
+        HistorialManager.inicializarSiVacio(config);
+
+        View.OnClickListener irAjustes = x -> startActivity(new Intent(this, AjustesActivity.class));
+        findViewById(R.id.btnAjustes).setOnClickListener(irAjustes);
+
+        View.OnClickListener irHistorial = x -> startActivity(new Intent(this, HistorialActivity.class));
+        View btnHistorial = findViewById(R.id.btnHistorial);
+        if (btnHistorial != null) {
+            btnHistorial.setOnClickListener(irHistorial);
+        }
+
+        // Inicializar notificaciones del sistema
+        Notificador.inicializarCanal(this);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
+            }
+        }
     }
 
     @Override
@@ -121,11 +146,13 @@ public class MainActivity extends AppCompatActivity {
         temp = tempRaw + config.get("temp_offset");
         double vNeutro = config.get("ph_v_neutro");
         double vAcido = config.get("ph_v_acido");
-        double pendiente = 3.0 / (vNeutro - vAcido);
+        double diff = vNeutro - vAcido;
+        double pendiente = (Math.abs(diff) < 0.001) ? 0.0 : 3.0 / diff;
         ph = limitar(7.0 + (phV - vNeutro) * pendiente, 0, 14);
 
         historial.add((float) temp);
         if (historial.size() > 30) historial.remove(0);
+        HistorialManager.agregar((float) temp, (float) ph, (float) o2);
     }
 
     // 0 = normal, 1 = bajo, 2 = alto
@@ -136,11 +163,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void pintarEstado(TextView chip, int estado) {
-        String[] textos = {"Normal", "Bajo", "Alto"};
+        String[] textos = {"NORMAL", "BAJO", "ALTO"};
         chip.setText(textos[estado]);
         GradientDrawable fondo = new GradientDrawable();
-        fondo.setCornerRadius(dp(14));
-        fondo.setColor(Color.parseColor(estado == 0 ? "#2E9E5B" : "#D64545"));
+        fondo.setCornerRadius(dp(999));
+        fondo.setStroke(Math.max(1, Math.round(1.5f * getResources().getDisplayMetrics().density)), Color.parseColor("#000000"));
+        if (estado == 0) {
+            fondo.setColor(Color.parseColor("#55DB9C")); // Mint Pop
+            chip.setTextColor(Color.parseColor("#000000"));
+        } else {
+            fondo.setColor(Color.parseColor("#FB4903")); // Ember
+            chip.setTextColor(Color.parseColor("#FFFFFF"));
+        }
         chip.setBackground(fondo);
     }
 
@@ -189,6 +223,7 @@ public class MainActivity extends AppCompatActivity {
 
         anillo.setProgreso(enRango, 3);
         tvResumen.setText(enRango == 3 ? "Todo en rango" : (3 - enRango) + " fuera de rango");
+        grafica.setHoras(HistorialManager.obtenerPrimeraHora(), HistorialManager.obtenerUltimaHora());
         grafica.setDatos(historial, tMin, tMax);
         registrarCambios(estado);
 
@@ -202,6 +237,39 @@ public class MainActivity extends AppCompatActivity {
             tvAlerta.setVisibility(View.VISIBLE);
         } else {
             tvAlerta.setVisibility(View.GONE);
+        }
+
+        // Notificaciones al celular cuando cualquier lectura se sale del rango
+        if (eT == 1) {
+            Notificador.notificarAlerta(this, Notificador.ID_NOTIF_TEMP,
+                    "🚨 Alerta: Temperatura Baja",
+                    String.format(Locale.US, "La temperatura cayó a %.1f °C (mínimo permitido: %.1f °C)", temp, tMin));
+        } else if (eT == 2) {
+            Notificador.notificarAlerta(this, Notificador.ID_NOTIF_TEMP,
+                    "🚨 Alerta: Temperatura Alta",
+                    String.format(Locale.US, "La temperatura subió a %.1f °C (máximo permitido: %.1f °C)", temp, tMax));
+        } else {
+            Notificador.cancelarAlerta(this, Notificador.ID_NOTIF_TEMP);
+        }
+
+        if (eP == 1) {
+            Notificador.notificarAlerta(this, Notificador.ID_NOTIF_PH,
+                    "🚨 Alerta: pH Ácido",
+                    String.format(Locale.US, "El agua está ácida: pH %.2f (mínimo permitido: %.2f)", ph, phMin));
+        } else if (eP == 2) {
+            Notificador.notificarAlerta(this, Notificador.ID_NOTIF_PH,
+                    "🚨 Alerta: pH Alcalino",
+                    String.format(Locale.US, "El agua está alcalina: pH %.2f (máximo permitido: %.2f)", ph, phMax));
+        } else {
+            Notificador.cancelarAlerta(this, Notificador.ID_NOTIF_PH);
+        }
+
+        if (eO == 1) {
+            Notificador.notificarAlerta(this, Notificador.ID_NOTIF_O2,
+                    "🚨 Alerta: Oxígeno Disuelto Bajo",
+                    String.format(Locale.US, "El oxígeno cayó a %.1f %% (mínimo vital: %.1f %%)", o2, o2Min));
+        } else {
+            Notificador.cancelarAlerta(this, Notificador.ID_NOTIF_O2);
         }
     }
 }

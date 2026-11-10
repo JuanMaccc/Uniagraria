@@ -12,6 +12,7 @@ public class AnilloView extends View {
 
     private final Paint fondo = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint arco = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint bordeBorde = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint texto = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
 
@@ -22,14 +23,17 @@ public class AnilloView extends View {
         float d = getResources().getDisplayMetrics().density;
 
         fondo.setStyle(Paint.Style.STROKE);
-        fondo.setColor(Color.parseColor("#2B3844"));
+        fondo.setColor(Color.parseColor("#E9E9E9")); // Soft mist
+
+        bordeBorde.setStyle(Paint.Style.STROKE);
+        bordeBorde.setColor(Color.parseColor("#000000")); // Carbon
 
         arco.setStyle(Paint.Style.STROKE);
         arco.setStrokeCap(Paint.Cap.ROUND);
 
-        texto.setColor(Color.WHITE);
+        texto.setColor(Color.parseColor("#000000")); // Carbon
         texto.setTextAlign(Paint.Align.CENTER);
-        texto.setTextSize(24 * d);
+        texto.setTextSize(22 * d);
         texto.setFakeBoldText(true);
     }
 
@@ -44,10 +48,12 @@ public class AnilloView extends View {
         super.onDraw(canvas);
         float w = getWidth(), h = getHeight();
         float s = Math.min(w, h);
-        float grosor = s * 0.13f;
+        float grosor = s * 0.14f;
         fondo.setStrokeWidth(grosor);
         arco.setStrokeWidth(grosor);
-        arco.setColor(Color.parseColor(enRango == total ? "#4FA3C7" : "#D64545"));
+
+        // Slush sticker palette: Mint Pop (#55DB9C) si todo OK, Ember (#FB4903) si hay alerta
+        arco.setColor(Color.parseColor(enRango == total ? "#55DB9C" : "#FB4903"));
 
         float izq = (w - s) / 2 + grosor / 2, arr = (h - s) / 2 + grosor / 2;
         rect.set(izq, arr, izq + s - grosor, arr + s - grosor);
