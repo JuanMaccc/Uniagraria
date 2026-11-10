@@ -3,7 +3,7 @@
     android:id="@+id/rootAjustes"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0E1822"
+    android:background="@color/slush_sky_wash"
     android:orientation="vertical">
 
     <LinearLayout
@@ -19,16 +19,19 @@
             android:id="@+id/btnVolver"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
             android:paddingEnd="16dp"
             android:text="←"
-            android:textColor="#FFFFFF"
-            android:textSize="28sp" />
+            android:textColor="@color/slush_carbon"
+            android:textSize="28sp"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Ajustes"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/slush_carbon"
             android:textSize="26sp"
             android:textStyle="bold" />
     </LinearLayout>
@@ -42,7 +45,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:paddingBottom="24dp">
 
             <!-- ===== Umbrales de alerta ===== -->
             <LinearLayout
@@ -50,20 +54,28 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="18dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Umbrales de alerta"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/slush_carbon"
                     android:textSize="18sp"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Configura los límites para disparar alertas"
+                    android:textColor="#555555"
+                    android:textSize="13sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="14dp"
                     android:orientation="horizontal">
 
                     <LinearLayout
@@ -72,24 +84,30 @@
                         android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Temp. mín (°C)"
-                            android:textColor="#8FA3B3"
-                            android:textSize="13sp" />
+                            android:textColor="@color/slush_carbon"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
                         <EditText
                             android:id="@+id/etTMin"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/bg_input"
                             android:importantForAutofill="no"
-                            android:inputType="numberDecimal"
+                            android:inputType="numberDecimal|numberSigned"
                             android:maxLines="1"
                             android:minHeight="48dp"
                             android:padding="12dp"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp" />
+                            android:textColor="@color/slush_carbon"
+                            android:textColorHint="#888888"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -98,24 +116,30 @@
                         android:layout_marginStart="6dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Temp. máx (°C)"
-                            android:textColor="#8FA3B3"
-                            android:textSize="13sp" />
+                            android:textColor="@color/slush_carbon"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
                         <EditText
                             android:id="@+id/etTMax"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/bg_input"
                             android:importantForAutofill="no"
-                            android:inputType="numberDecimal"
+                            android:inputType="numberDecimal|numberSigned"
                             android:maxLines="1"
                             android:minHeight="48dp"
                             android:padding="12dp"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp" />
+                            android:textColor="@color/slush_carbon"
+                            android:textColorHint="#888888"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -131,24 +155,30 @@
                         android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="pH mín"
-                            android:textColor="#8FA3B3"
-                            android:textSize="13sp" />
+                            android:textColor="@color/slush_carbon"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
                         <EditText
                             android:id="@+id/etPhMin"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/bg_input"
                             android:importantForAutofill="no"
                             android:inputType="numberDecimal"
                             android:maxLines="1"
                             android:minHeight="48dp"
                             android:padding="12dp"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp" />
+                            android:textColor="@color/slush_carbon"
+                            android:textColorHint="#888888"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -157,24 +187,30 @@
                         android:layout_marginStart="6dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="pH máx"
-                            android:textColor="#8FA3B3"
-                            android:textSize="13sp" />
+                            android:textColor="@color/slush_carbon"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
                         <EditText
                             android:id="@+id/etPhMax"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
                             android:background="@drawable/bg_input"
                             android:importantForAutofill="no"
                             android:inputType="numberDecimal"
                             android:maxLines="1"
                             android:minHeight="48dp"
                             android:padding="12dp"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp" />
+                            android:textColor="@color/slush_carbon"
+                            android:textColorHint="#888888"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -183,30 +219,36 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Oxígeno mín (% vol)"
-                    android:textColor="#8FA3B3"
-                    android:textSize="13sp" />
+                    android:textColor="@color/slush_carbon"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
                 <EditText
                     android:id="@+id/etO2Min"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
                     android:background="@drawable/bg_input"
                     android:importantForAutofill="no"
                     android:inputType="numberDecimal"
                     android:maxLines="1"
                     android:minHeight="48dp"
                     android:padding="12dp"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp" />
+                    android:textColor="@color/slush_carbon"
+                    android:textColorHint="#888888"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <Button
                     android:id="@+id/btnGuardar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:backgroundTint="#4FA3C7"
-                    android:text="Guardar umbrales"
+                    android:background="@drawable/bg_pill_button_black"
+                    android:letterSpacing="0.03"
+                    android:text="GUARDAR UMBRALES"
                     android:textAllCaps="false"
-                    android:textColor="#0E1822"
+                    android:textColor="@color/slush_paper_white"
                     android:textStyle="bold" />
 
                 <TextView
@@ -214,8 +256,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:gravity="center"
                     android:minHeight="20dp"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <!-- ===== Calibración de sensores ===== -->
@@ -226,37 +270,39 @@
                 android:layout_marginBottom="16dp"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="18dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Calibración de sensores"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/slush_carbon"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="pH: sumerge la sonda en la solución buffer, espera a que el voltaje se estabilice y pulsa el botón correspondiente."
-                    android:textColor="#8FA3B3"
+                    android:layout_marginTop="4dp"
+                    android:text="pH: sumerge la sonda en la solución buffer y pulsa el botón correspondiente cuando el voltaje sea estable."
+                    android:textColor="#555555"
                     android:textSize="13sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="Voltaje actual del pH"
-                    android:textColor="#8FA3B3"
-                    android:textSize="13sp" />
+                    android:text="Voltaje actual de la sonda"
+                    android:textColor="@color/slush_carbon"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
                 <TextView
                     android:id="@+id/tvPhV"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="-- V"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/slush_carbon"
                     android:textSize="28sp"
                     android:textStyle="bold" />
 
@@ -265,81 +311,123 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:orientation="horizontal">
+
                     <Button
                         android:id="@+id/btnPh7"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        android:backgroundTint="#26343F"
+                        android:background="@drawable/bg_pill_button"
                         android:text="Fijar como pH 7"
                         android:textAllCaps="false"
-                        android:textColor="#7CC4E8" />
+                        android:textColor="@color/slush_carbon"
+                        android:textStyle="bold" />
+
                     <Button
                         android:id="@+id/btnPh4"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        android:backgroundTint="#26343F"
+                        android:background="@drawable/bg_pill_button"
                         android:text="Fijar como pH 4"
                         android:textAllCaps="false"
-                        android:textColor="#7CC4E8" />
+                        android:textColor="@color/slush_carbon"
+                        android:textStyle="bold" />
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="Temperatura: escribe lo que marca tu termómetro de referencia y se calcula la corrección (offset)."
-                    android:textColor="#8FA3B3"
+                    android:text="Temperatura: escribe la temperatura del termómetro de referencia para calcular la corrección (offset)."
+                    android:textColor="#555555"
                     android:textSize="13sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
+                    android:text="Lectura actual del sensor"
+                    android:textColor="@color/slush_carbon"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvTempRaw"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-- °C"
+                    android:textColor="@color/slush_carbon"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
                     android:text="Temperatura de referencia (°C)"
-                    android:textColor="#8FA3B3"
-                    android:textSize="13sp" />
+                    android:textColor="@color/slush_carbon"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
                 <EditText
                     android:id="@+id/etTref"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
                     android:background="@drawable/bg_input"
                     android:importantForAutofill="no"
-                    android:inputType="numberDecimal"
+                    android:inputType="numberDecimal|numberSigned"
                     android:maxLines="1"
                     android:minHeight="48dp"
                     android:padding="12dp"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp" />
+                    android:textColor="@color/slush_carbon"
+                    android:textColorHint="#888888"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <Button
                     android:id="@+id/btnTemp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:backgroundTint="#26343F"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_pill_button"
                     android:text="Calcular corrección"
                     android:textAllCaps="false"
-                    android:textColor="#7CC4E8" />
+                    android:textColor="@color/slush_carbon"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tvCalInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:textColor="#8FA3B3"
-                    android:textSize="13sp" />
+                    android:textColor="#444444"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tvMsgCal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
+                    android:gravity="center"
                     android:minHeight="20dp"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnReset"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_pill_button"
+                    android:text="Restablecer valores de fábrica"
+                    android:textAllCaps="false"
+                    android:textColor="@color/slush_ember"
+                    android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
