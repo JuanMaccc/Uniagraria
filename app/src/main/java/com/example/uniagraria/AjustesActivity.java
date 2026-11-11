@@ -21,21 +21,43 @@ import java.util.Map;
 public class AjustesActivity extends AppCompatActivity {
 
     private Config config;
+    private NubeMqtt nube;
     private EditText etTMin, etTMax, etPhMin, etPhMax, etO2Min, etTref;
     private TextView tvMsg, tvMsgCal, tvPhV, tvTempRaw, tvCalInfo;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    // Muestra lecturas crudas en vivo para calibrar
-    private final Runnable refrescar = new Runnable() {
+    // Dónde mostrar la respuesta del ESP32 a la última orden enviada
+    private TextView mensajePendiente = null;
+
+    private final Runnable sinRespuesta = () -> {
+        if (mensajePendiente != null) {
+            aviso(mensajePendiente,
+                    "El ESP32 no respondió. Revisa que esté encendido y con internet.", false);
+            mensajePendiente = null;
+        }
+    };
+
+    private final NubeMqtt.Escucha escucha = new NubeMqtt.Escucha() {
         @Override
-        public void run() {
-            float v = Config.ultimoPhV;
-            tvPhV.setText(Float.isNaN(v) ? "-- V" : String.format(Locale.US, "%.3f V", v));
+        public void onDatos(NubeMqtt.Datos d) {
+            // Lecturas crudas en vivo, para poder calibrar
+            tvPhV.setText(Double.isNaN(d.phV) ? "-- V" : String.format(Locale.US, "%.3f V", d.phV));
+            tvTempRaw.setText(Double.isNaN(d.tempRaw) ? "-- °C" : String.format(Locale.US, "%.1f °C", d.tempRaw));
+        }
 
-            float raw = Config.ultimoTempRaw;
-            tvTempRaw.setText(Float.isNaN(raw) ? "-- °C" : String.format(Locale.US, "%.1f °C", raw));
+        @Override
+        public void onConfig() {
+            llenarUmbrales();
+            actualizarInfo();
+        }
 
-            handler.postDelayed(this, 1000);
+        @Override
+        public void onRespuesta(boolean ok, String mensaje) {
+            handler.removeCallbacks(sinRespuesta);
+            if (mensajePendiente != null) {
+                aviso(mensajePendiente, ok ? mensaje + " ✔" : mensaje, ok);
+                mensajePendiente = null;
+            }
         }
     };
 
@@ -60,6 +82,7 @@ public class AjustesActivity extends AppCompatActivity {
         });
 
         config = new Config(this);
+        nube = NubeMqtt.get(this);
 
         etTMin = findViewById(R.id.etTMin);
         etTMax = findViewById(R.id.etTMax);
@@ -75,8 +98,8 @@ public class AjustesActivity extends AppCompatActivity {
 
         findViewById(R.id.btnVolver).setOnClickListener(x -> finish());
         findViewById(R.id.btnGuardar).setOnClickListener(x -> guardarUmbrales());
-        findViewById(R.id.btnPh7).setOnClickListener(x -> calibrarPh("ph_v_neutro"));
-        findViewById(R.id.btnPh4).setOnClickListener(x -> calibrarPh("ph_v_acido"));
+        findViewById(R.id.btnPh7).setOnClickListener(x -> calibrarPh("ph7"));
+        findViewById(R.id.btnPh4).setOnClickListener(x -> calibrarPh("ph4"));
         findViewById(R.id.btnTemp).setOnClickListener(x -> calibrarTemperatura());
         findViewById(R.id.btnReset).setOnClickListener(x -> restablecerValores());
 
@@ -87,13 +110,14 @@ public class AjustesActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        handler.post(refrescar);
+        nube.agregarEscucha(escucha);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        handler.removeCallbacks(refrescar);
+        nube.quitarEscucha(escucha);
+        handler.removeCallbacks(sinRespuesta);
     }
 
     private void llenarUmbrales() {
@@ -123,6 +147,31 @@ public class AjustesActivity extends AppCompatActivity {
         tv.setTextColor(Color.parseColor(ok ? "#2E8B57" : "#FB4903"));
     }
 
+    /** Comprueba que se pueda hablar con el ESP32 antes de enviar una orden. */
+    private boolean enLinea(TextView destino) {
+        if (!nube.configurada()) {
+            aviso(destino, "Falta escribir los datos del broker en NubeMqtt.java", false);
+            return false;
+        }
+        if (!nube.listoParaEnviar()) {
+            aviso(destino, "ESP32 sin conexión: no se pueden enviar cambios ahora", false);
+            return false;
+        }
+        return true;
+    }
+
+    private void esperarRespuesta(TextView destino) {
+        mensajePendiente = destino;
+        aviso(destino, "Enviando al ESP32…", true);
+        handler.removeCallbacks(sinRespuesta);
+        handler.postDelayed(sinRespuesta, 6000);
+    }
+
+    private void enviarCambios(TextView destino, Map<String, Float> cambios) {
+        if (nube.enviarConfig(cambios)) esperarRespuesta(destino);
+        else aviso(destino, "No se pudo enviar la orden", false);
+    }
+
     private void guardarUmbrales() {
         Map<String, Float> cambios = new HashMap<>();
         cambios.put("t_min", num(etTMin));
@@ -138,41 +187,37 @@ public class AjustesActivity extends AppCompatActivity {
             }
         }
 
-        String error = config.guardar(cambios);
+        String error = config.validar(cambios);
         if (error != null) {
             aviso(tvMsg, error, false);
-        } else {
-            llenarUmbrales();
-            aviso(tvMsg, "Umbrales guardados ✔", true);
+            return;
         }
+        if (!enLinea(tvMsg)) return;
+        enviarCambios(tvMsg, cambios);
     }
 
-    private void calibrarPh(String clave) {
-        float v = Config.ultimoPhV;
-        if (Float.isNaN(v)) {
+    private void calibrarPh(String punto) {
+        NubeMqtt.Datos d = nube.ultimosDatos();
+        if (d == null || Double.isNaN(d.phV)) {
             aviso(tvMsgCal, "El sensor de pH no entrega lectura", false);
             return;
         }
+        float v = (float) d.phV;
 
-        // Advertencia si intenta fijar pH 4 y el sensor marca exactamente lo mismo que pH 7
-        if ("ph_v_acido".equals(clave) && Math.abs(v - config.get("ph_v_neutro")) < 0.05f) {
+        // Evita fijar el mismo buffer en los dos puntos
+        if ("ph4".equals(punto) && Math.abs(v - config.get("ph_v_neutro")) < 0.05f) {
             aviso(tvMsgCal, "Sumerge la sonda en la solución pH 4 (voltaje casi igual a pH 7)", false);
             return;
         }
-        if ("ph_v_neutro".equals(clave) && Math.abs(v - config.get("ph_v_acido")) < 0.05f) {
+        if ("ph7".equals(punto) && Math.abs(v - config.get("ph_v_acido")) < 0.05f) {
             aviso(tvMsgCal, "Sumerge la sonda en la solución pH 7 (voltaje casi igual a pH 4)", false);
             return;
         }
 
-        Map<String, Float> cambios = new HashMap<>();
-        cambios.put(clave, v);
-        String error = config.guardar(cambios);
-        if (error != null) {
-            aviso(tvMsgCal, error, false);
-        } else {
-            actualizarInfo();
-            aviso(tvMsgCal, "Calibración de pH guardada ✔", true);
-        }
+        if (!enLinea(tvMsgCal)) return;
+        // El ESP32 usa su propia lectura en el momento de recibir la orden
+        if (nube.calibrar(punto, null)) esperarRespuesta(tvMsgCal);
+        else aviso(tvMsgCal, "No se pudo enviar la orden", false);
     }
 
     private void calibrarTemperatura() {
@@ -181,28 +226,21 @@ public class AjustesActivity extends AppCompatActivity {
             aviso(tvMsgCal, "Escribe la temperatura de referencia", false);
             return;
         }
-        float raw = Config.ultimoTempRaw;
-        if (Float.isNaN(raw)) {
+        NubeMqtt.Datos d = nube.ultimosDatos();
+        if (d == null || Double.isNaN(d.tempRaw)) {
             aviso(tvMsgCal, "El sensor de temperatura no entrega lectura", false);
             return;
         }
-        Map<String, Float> cambios = new HashMap<>();
-        cambios.put("temp_offset", ref - raw);
-        String error = config.guardar(cambios);
-        if (error != null) {
-            aviso(tvMsgCal, error, false);
-        } else {
-            actualizarInfo();
-            aviso(tvMsgCal, "Calibración de temperatura guardada ✔", true);
-        }
+        if (!enLinea(tvMsgCal)) return;
+        if (nube.calibrar("temp", ref)) esperarRespuesta(tvMsgCal);
+        else aviso(tvMsgCal, "No se pudo enviar la orden", false);
     }
 
     private void restablecerValores() {
-        config.restablecerPorDefecto();
-        llenarUmbrales();
-        actualizarInfo();
+        if (!enLinea(tvMsg)) return;
+        Map<String, Float> fabrica = new HashMap<>();
+        for (String k : Config.CLAVES) fabrica.put(k, Config.defecto(k));
         etTref.setText("");
-        aviso(tvMsg, "Umbrales restablecidos de fábrica ✔", true);
-        aviso(tvMsgCal, "Calibración restablecida de fábrica ✔", true);
+        enviarCambios(tvMsg, fabrica);
     }
 }

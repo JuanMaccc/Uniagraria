@@ -32,25 +32,10 @@ public class HistorialActivity extends AppCompatActivity {
     private final Runnable refrescar = new Runnable() {
         @Override
         public void run() {
-            simularTickSiEsNecesario();
             actualizarDatos();
             handler.postDelayed(this, 2000);
         }
     };
-
-    private void simularTickSiEsNecesario() {
-        List<HistorialManager.Lectura> todas = HistorialManager.obtenerTodas();
-        if (todas.isEmpty()) return;
-        HistorialManager.Lectura ult = todas.get(todas.size() - 1);
-        long ahora = System.currentTimeMillis();
-        // Si no han llegado lecturas recientes, generar un punto para mantener la gráfica viva
-        if (ahora - ult.timestamp >= 1800) {
-            float t = (float) Math.max(22, Math.min(35, ult.temperatura + (Math.random() - 0.49) * 0.4));
-            float ph = (float) Math.max(0, Math.min(14, ult.ph + (Math.random() - 0.5) * 0.04));
-            float o2 = (float) Math.max(16, Math.min(24, ult.oxigeno + (Math.random() - 0.5) * 0.25));
-            HistorialManager.agregar(t, ph, o2);
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

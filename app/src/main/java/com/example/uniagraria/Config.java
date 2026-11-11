@@ -6,15 +6,15 @@ import android.content.SharedPreferences;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Copia local de los umbrales y la calibración. La versión que manda es la del ESP32:
+ * cada vez que él publica su configuración, aquí se actualiza con aplicarRemota().
+ */
 public class Config {
 
     public static final String[] CLAVES = {
             "t_min", "t_max", "ph_min", "ph_max", "o2_min",
             "temp_offset", "ph_v_neutro", "ph_v_acido"};
-
-    // Últimos valores "crudos" de los sensores con valores base realistas
-    public static volatile float ultimoTempRaw = 28.0f;
-    public static volatile float ultimoPhV = 1.278f;
 
     private final SharedPreferences sp;
 
@@ -64,17 +64,17 @@ public class Config {
         }
     }
 
-    /** Restablece todos los valores a los valores de fábrica. */
-    public void restablecerPorDefecto() {
+    /** Guarda lo que publica el ESP32, sin validar (él ya lo validó). */
+    public void aplicarRemota(Map<String, Float> valores) {
         SharedPreferences.Editor ed = sp.edit();
-        for (String k : CLAVES) {
-            ed.putFloat(k, defecto(k));
+        for (Map.Entry<String, Float> e : valores.entrySet()) {
+            ed.putFloat(e.getKey(), e.getValue());
         }
         ed.apply();
     }
 
-    /** Valida y guarda. Devuelve null si todo salió bien, o el mensaje de error. */
-    public String guardar(Map<String, Float> cambios) {
+    /** Solo valida, no guarda. Devuelve null si está bien, o el mensaje de error. */
+    public String validar(Map<String, Float> cambios) {
         Map<String, Float> nueva = new HashMap<>();
         for (String k : CLAVES) nueva.put(k, get(k));
 
@@ -91,35 +91,20 @@ public class Config {
             nueva.put(k, v);
         }
 
-        // Validar coherencia solo sobre lo que se está modificando
-        boolean cambioTempUmbrales = cambios.containsKey("t_min") || cambios.containsKey("t_max");
-        Float tMin = nueva.get("t_min");
-        Float tMax = nueva.get("t_max");
-        if (cambioTempUmbrales && tMin != null && tMax != null && tMin >= tMax) {
+        boolean cambioTemp = cambios.containsKey("t_min") || cambios.containsKey("t_max");
+        if (cambioTemp && nueva.get("t_min") >= nueva.get("t_max")) {
             return "La temperatura mínima debe ser menor que la máxima";
         }
 
-        boolean cambioPhUmbrales = cambios.containsKey("ph_min") || cambios.containsKey("ph_max");
-        Float phMin = nueva.get("ph_min");
-        Float phMax = nueva.get("ph_max");
-        if (cambioPhUmbrales && phMin != null && phMax != null && phMin >= phMax) {
+        boolean cambioPh = cambios.containsKey("ph_min") || cambios.containsKey("ph_max");
+        if (cambioPh && nueva.get("ph_min") >= nueva.get("ph_max")) {
             return "El pH mínimo debe ser menor que el máximo";
         }
 
-        boolean cambioPhCalibracion = cambios.containsKey("ph_v_neutro") || cambios.containsKey("ph_v_acido");
-        if (cambioPhCalibracion) {
-            Float vNeutro = nueva.get("ph_v_neutro");
-            Float vAcido = nueva.get("ph_v_acido");
-            if (vNeutro != null && vAcido != null && Math.abs(vNeutro - vAcido) < 0.05f) {
-                return "Los voltajes de pH 7 y pH 4 son casi iguales (deben variar al menos 0.05 V)";
-            }
+        boolean cambioCalPh = cambios.containsKey("ph_v_neutro") || cambios.containsKey("ph_v_acido");
+        if (cambioCalPh && Math.abs(nueva.get("ph_v_neutro") - nueva.get("ph_v_acido")) < 0.05f) {
+            return "Los voltajes de pH 7 y pH 4 son casi iguales (deben variar al menos 0.05 V)";
         }
-
-        SharedPreferences.Editor ed = sp.edit();
-        for (Map.Entry<String, Float> e : cambios.entrySet()) {
-            ed.putFloat(e.getKey(), e.getValue());
-        }
-        ed.apply();
         return null;
     }
 }
